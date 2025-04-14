@@ -1,13 +1,23 @@
 ﻿param (
-    [Parameter(Mandatory = $true)]
-    [string]$ConfigPath
+    [string]$ConfigPath = ".\config.json"
 )
 
 
 Import-Module PSFramework
 
-# Device instance path from Device Manager
+$displayModeMap = @{
+    1 = 'Internal'
+    2 = 'Clone'
+    3 = 'Extend'
+    4 = 'External'
+}
 
+$lidActionMap = @{
+    0 = 'Do Nothing'
+    1 = 'Sleep'
+    2 = 'Hibernate'
+    3 = 'Shutdown'
+}
 
 $config = Get-Content $ConfigPath | ConvertFrom-Json
 $config.Default_Setup | Add-Member -NotePropertyName Name -NotePropertyValue "Default Setup"
@@ -80,13 +90,14 @@ function Configure-Setup {
     powercfg /SETACVALUEINDEX SCHEME_CURRENT SUB_BUTTONS LidAction $setup.LidAction
     powercfg /SETDCVALUEINDEX SCHEME_CURRENT SUB_BUTTONS LidAction $setup.LidAction
     powercfg /SETACTIVE SCHEME_CURRENT
+    Write-PSFMessage -Level Output -Message "Setting Lid action to: '$($lidActionMap[$setup.LidAction])'"
     if($config.LaptopScreenSerialId -iin $screens) {
         DisplaySwitch.exe $setup.LidOpenedDisplayMode
-        Write-PSFMessage -Level Output -Message "Lid is open. Setting Display mode to $($setup.LidOpenedDisplayMode)"
+        Write-PSFMessage -Level Output -Message "Lid is open. Setting Display mode to: '$($displayModeMap[$setup.LidOpenedDisplayMode])'"
     }
     else {
         DisplaySwitch.exe $setup.LidClosedDisplayMode
-        Write-PSFMessage -Level Output -Message "Lid is closed. Setting Display mode to $($setup.LidClosedDisplayMode)"
+        Write-PSFMessage -Level Output -Message "Lid is closed. Setting Display mode to: '$($displayModeMap[$setup.LidClosedDisplayMode])'"
     }
 
 }
@@ -114,7 +125,7 @@ while ($true)
             $screensWithoutLaptop = @()
         }
         $setup = Get-Setup -ScreensWithoutLaptop $screensWithoutLaptop
-        Write-PSFMessage -Level Output -Message "Identifyied setup: $($setup.Name)"
+        Write-PSFMessage -Level Output -Message "Identifyied setup: '$($setup.Name)'"
         Configure-Setup -setup $setup -screens $screens
     }
 
