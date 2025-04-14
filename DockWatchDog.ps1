@@ -1,78 +1,124 @@
-﻿Import-Module PSFramework
+﻿param (
+    [Parameter(Mandatory = $true)]
+    [string]$ConfigPath
+)
 
+
+Import-Module PSFramework
 
 # Device instance path from Device Manager
-$monitorIds = "DISPLAY\MSI3BC0\4&2DF1E0B1&1&UID4163_0", "DISPLAY\MSI3BC0\4&2DF1E0B1&1&UID8515_0"
-$laptopScreenId = "DISPLAY\SDC414B\4&2df1e0b1&1&UID8388688_0"
+
+
+$config = Get-Content $ConfigPath | ConvertFrom-Json
+$config.Default_Setup | Add-Member -NotePropertyName Name -NotePropertyValue "Default Setup"
 
 $headers = 'Timestamp', 'Level', 'Message'
 $paramSetPSFLoggingProvider = @{
     Name          = 'logfile'
     InstanceName  = 'DockWatchDog'
-    FilePath      = 'C:\Scripts\DockWatchDog-%Date%.csv'
+    FilePath      = "$($config.logging.LogDir)\DockWatchDog-%Date%.csv"
     Headers       = $headers
     Enabled       = $true
     Wait          = $true
-    LogRotatePath = 'C:\Scripts\DockWatchDog-*.csv'
+    LogRotatePath = "$($config.logging.LogDir)\DockWatchDog-*.csv"
 }
 
 Set-PSFLoggingProvider @paramSetPSFLoggingProvider
-$perviousScreens = @()
+
+
+function Get-AreListsEqual {
+    param (
+        [Parameter(Mandatory = $true)]
+        [AllowEmptyCollection()]
+        [object[]]$ListA,
+
+        [Parameter(Mandatory = $true)]
+        [AllowEmptyCollection()]
+        [object[]]$ListB
+    )
+
+    $listASorted = $ListA | Sort-Object
+    $listBSorted = $ListB | Sort-Object
+
+    if (!$listASorted) 
+    {
+        $listASorted = @()
+    }
+    if(!$listBSorted)
+    {
+        $listBSorted = @()
+    }
+    return (($listASorted.Count -eq $listBSorted.Count) -and ($null -eq (Compare-Object $listASorted $listBSorted)))
+}
+
+function Get-Setup {
+    param (
+        [Parameter(Mandatory = $true)]
+        [AllowEmptyCollection()]
+        [object[]]$ScreensWithoutLaptop
+    )
+
+    $setup = $null
+    $config.Specific_Setups | ForEach-Object {if(Get-AreListsEqual -ListA $_.MonitorSerials -ListB $ScreensWithoutLaptop) {$setup = $_}}
+    if($setup) {
+        return $setup
+    }
+    $config.Generic_Setups | ForEach-Object {if($_.Num_of_external_screens -eq $ScreensWithoutLaptop.Count) {$setup = $_}}
+    if($setup) {
+        return $setup
+    }
+    else {
+        return $config.Default_Setup
+    }
+
+}
+
+function Configure-Setup {
+    param (
+    $setup, $screens
+    )
+    powercfg /SETACVALUEINDEX SCHEME_CURRENT SUB_BUTTONS LidAction $setup.LidAction
+    powercfg /SETDCVALUEINDEX SCHEME_CURRENT SUB_BUTTONS LidAction $setup.LidAction
+    powercfg /SETACTIVE SCHEME_CURRENT
+    if($config.LaptopScreenSerialId -iin $screens) {
+        DisplaySwitch.exe $setup.LidOpenedDisplayMode
+        Write-PSFMessage -Level Output -Message "Lid is open. Setting Display mode to $($setup.LidOpenedDisplayMode)"
+    }
+    else {
+        DisplaySwitch.exe $setup.LidClosedDisplayMode
+        Write-PSFMessage -Level Output -Message "Lid is closed. Setting Display mode to $($setup.LidClosedDisplayMode)"
+    }
+
+}
+
+
 Write-PSFMessage -Level Output -Message "Dock watchdog service started"
+$previousScreens = @()
+
 while ($true) 
 {
-    $screens = (Get-CimInstance -Namespace root\wmi -ClassName WmiMonitorBasicDisplayParams).InstanceName 
+    $screens = Get-CimInstance -Namespace root\wmi -ClassName WmiMonitorID | ForEach-Object {
+    ($_.SerialNumberID | ForEach-Object { [char]$_ }) -join ''
+    }
+
     if(! $screens) {
         $screens = @()
     }
 
-    $screensSorted = $screens | Sort-Object
-    $previousScreendSorted = $previousScreens | Sort-Object
-    $changeInScreens = !(($screensSorted.Count -eq $previousScreendSorted.Count) -and ($null -eq (Compare-Object $screensSorted $previousScreendSorted)))
+    $changeInScreens = !(Get-AreListsEqual -ListA $screens -ListB $previousScreens)
 
-    $relevantSetupConnected = $monitorIds | Where-Object {$_ -iin $screens}
-
-
-    if ($relevantSetupConnected) {
-        if($changeInScreens)
-        {
-            Write-PSFMessage -Level Output -Message "Dock recognized"
-            if($laptopScreenId -iin $screens) {
-                DisplaySwitch.exe 4
-                Write-PSFMessage -Level Output -Message "Recognized open lid, changed displayswitch mode to external."
-            }
-            else {
-                DisplaySwitch.exe 3
-                Write-PSFMessage -Level Output -Message "Recognized closed lid, changed displayswitch mode to extend."
-            }
-
-            # AC = plugged in, DC = on battery
-            # Lid close action values:
-            # 0 = Do nothing
-            # 1 = Sleep
-            # 2 = Hibernate
-            # 3 = Shut down
-            powercfg /SETACVALUEINDEX SCHEME_CURRENT SUB_BUTTONS LidAction 0
-            powercfg /SETDCVALUEINDEX SCHEME_CURRENT SUB_BUTTONS LidAction 0
-            powercfg /SETACTIVE SCHEME_CURRENT
-            Write-PSFMessage -Level Output -Message "changed lid action to 'do nothing'."
-
-        }
-
-        
-    }
-    else 
+    if($changeInScreens)
     {
-        if($changeInScreens)
-        {
-            DisplaySwitch.exe 3
-            powercfg /SETACVALUEINDEX SCHEME_CURRENT SUB_BUTTONS LidAction 1
-            powercfg /SETDCVALUEINDEX SCHEME_CURRENT SUB_BUTTONS LidAction 1
-            powercfg /SETACTIVE SCHEME_CURRENT
-            Write-PSFMessage -Level Output -Message "Dock isn't recognized, changed displayswitch mode to 'extend', and lid action to 'sleep'."
+        $screensWithoutLaptop = $screens | Where-Object {$_ -ne $config.LaptopScreenSerialId}
+        if(! $screensWithoutLaptop ) {
+            $screensWithoutLaptop = @()
         }
+        $setup = Get-Setup -ScreensWithoutLaptop $screensWithoutLaptop
+        Write-PSFMessage -Level Output -Message "Identifyied setup: $($setup.Name)"
+        Configure-Setup -setup $setup -screens $screens
     }
 
     Start-Sleep -Seconds 5
     $previousScreens = $screens
 }
+
