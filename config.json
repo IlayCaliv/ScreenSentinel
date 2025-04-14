@@ -1,0 +1,40 @@
+{
+    "Logging": {
+        "LogDir": "C:\\Scripts\\ScreenSentinel"
+    },
+    
+    "LaptopScreenSerialId": "0",
+    "Default_Setup": {
+        "LidAction": 1,
+        "LidOpenedDisplayMode": 1,
+        "LidClosedDisplayMode": 1
+    },
+    "Generic_Setups": [
+        {
+            "Name": "Laptop Screen Only",
+            "Num_of_external_screens": 0,
+            "LidAction": 1,
+            "LidOpenedDisplayMode": 1,
+            "LidClosedDisplayMode": 1
+        },
+        {
+            "Name": "One External Screen",
+            "Num_of_external_screens": 1,
+            "LidAction": 0,
+            "LidOpenedDisplayMode": 3,
+            "LidClosedDisplayMode": 4
+        }
+    ],
+    "Specific_Setups": [
+        {
+            "Name": "HomeDock",
+            "MonitorSerials": [
+                "SERIALNUMBER1",
+                "SERIALNUMBER2"
+            ],
+            "LidAction": 0,
+            "LidOpenedDisplayMode": 4,
+            "LidClosedDisplayMode": 3
+        }
+    ]
+}
