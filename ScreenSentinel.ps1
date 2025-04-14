@@ -26,11 +26,11 @@ $headers = 'Timestamp', 'Level', 'Message'
 $paramSetPSFLoggingProvider = @{
     Name          = 'logfile'
     InstanceName  = 'DockWatchDog'
-    FilePath      = "$($config.logging.LogDir)\DockWatchDog-%Date%.csv"
+    FilePath      = "$($config.logging.LogDir)\ScreenSentinel-%Date%.csv"
     Headers       = $headers
     Enabled       = $true
     Wait          = $true
-    LogRotatePath = "$($config.logging.LogDir)\DockWatchDog-*.csv"
+    LogRotatePath = "$($config.logging.LogDir)\ScreenSentinel-*.csv"
 }
 
 Set-PSFLoggingProvider @paramSetPSFLoggingProvider
