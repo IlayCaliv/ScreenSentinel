@@ -1,7 +1,7 @@
 
 # 🖥️ ScreenSentinel
 
-**ScreenSentinel** is a simple PowerShell script that automatically adjusts your laptop’s display mode and lid behavior based on which screens are currently connected. It's especially useful if you switch between setups like home, office, or docking stations.
+**ScreenSentinel** is a PowerShell script that automatically adjusts your laptop’s display mode and lid behavior based on which screens are currently connected. It's especially useful if you switch between setups like home, office, or docking stations.
 
 ---
 
@@ -28,7 +28,7 @@ Create a `config.json` file containing:
 - `Generic_Setups`: These are more flexible setups triggered based on the number of external monitors, regardless of their specific identity.
 - `Default_Setup`: This is used if neither a specific nor a generic setup matches the current screen configuration. It's a fallback for unknown or unconfigured setups.
 
-#### Example Enum Values Used
+#### Enum Values Meaning
 
 | Property                | Values                                    |
 |-------------------------|--------------------------------------------|
