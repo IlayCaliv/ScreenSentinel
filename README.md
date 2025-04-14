@@ -1,7 +1,7 @@
 
 # 🖥️ ScreenSentinel
 
-**ScreenSentinel** is a simple PowerShell script that automatically adjusts your laptop’s display mode and lid behavior based on which screens are currently connected. It's especially useful if you switch between setups like home, office, or docking stations.
+**ScreenSentinel** is a PowerShell script that automatically adjusts your laptop’s display mode and lid behavior based on which screens are currently connected. It's especially useful if you switch between setups like home, office, or docking stations.
 
 ---
 
