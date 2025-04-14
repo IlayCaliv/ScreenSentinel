@@ -28,7 +28,7 @@ Create a `config.json` file containing:
 - `Generic_Setups`: These are more flexible setups triggered based on the number of external monitors, regardless of their specific identity.
 - `Default_Setup`: This is used if neither a specific nor a generic setup matches the current screen configuration. It's a fallback for unknown or unconfigured setups.
 
-#### Example Enum Values Used
+#### Enum Values Meaning
 
 | Property                | Values                                    |
 |-------------------------|--------------------------------------------|
