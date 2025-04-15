@@ -2,7 +2,7 @@
     "Logging": {
         "LogDir": "C:\\Scripts\\ScreenSentinel"
     },
-    
+    "RunAsService": true,
     "LaptopScreenSerialId": "0",
     "Default_Setup": {
         "LidAction": 1,
