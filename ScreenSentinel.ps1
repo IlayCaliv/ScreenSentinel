@@ -12,6 +12,7 @@ $displayModeMap = @{
     4 = 'External'
 }
 
+
 $lidActionMap = @{
     0 = 'Do Nothing'
     1 = 'Sleep'
@@ -83,6 +84,34 @@ function Get-Setup {
 
 }
 
+function Set-DisplayMode { 
+    param (
+        [Parameter(Mandatory = $true)]
+        [int]$Mode
+    )
+    if($config.RunAsService)
+    {
+        $taskName = "ScreenSentinel_DisplaySwitch"
+        $action = "DisplaySwitch.exe $($Mode)"
+        schtasks /Create `
+            /TN $taskName `
+            /TR $action `
+            /SC ONCE `
+            /ST 00:00 `
+            /RL HIGHEST `
+            /F `
+            /RU $env:USERNAME
+
+        Start-Process schtasks -ArgumentList "/Run /TN ScreenSentinel_DisplaySwitch" -NoNewWindow
+    }
+    else 
+    {
+        DisplaySwitch.exe $Mode
+    }
+
+}
+
+
 function Configure-Setup {
     param (
     $setup, $screens
@@ -92,11 +121,11 @@ function Configure-Setup {
     powercfg /SETACTIVE SCHEME_CURRENT
     Write-PSFMessage -Level Output -Message "Setting Lid action to: '$($lidActionMap[$setup.LidAction])'"
     if($config.LaptopScreenSerialId -iin $screens) {
-        DisplaySwitch.exe $setup.LidOpenedDisplayMode
+        Set-DisplayMode -Mode $setup.LidOpenedDisplayMode
         Write-PSFMessage -Level Output -Message "Lid is open. Setting Display mode to: '$($displayModeMap[$setup.LidOpenedDisplayMode])'"
     }
     else {
-        DisplaySwitch.exe $setup.LidClosedDisplayMode
+        Set-DisplayMode -Mode $setup.LidClosedDisplayMode
         Write-PSFMessage -Level Output -Message "Lid is closed. Setting Display mode to: '$($displayModeMap[$setup.LidClosedDisplayMode])'"
     }
 
