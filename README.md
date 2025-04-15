@@ -18,7 +18,18 @@
 - Modular config – reuse across multiple machines and environments.
 
 ---
+## Requirements
 
+- PowerShell 5.1 or later
+- `PSFramework` module
+- Administrator privileges (for powercfg and scheduled task operations)
+
+Install PSFramework with:
+```powershell
+Install-Module PSFramework -Scope CurrentUser
+```
+
+---
 ### 🗂️ Configuration
 
 Create a `config.json` file containing:
@@ -56,6 +67,11 @@ Get-CimInstance -Namespace root\wmi -ClassName WmiMonitorID | ForEach-Object {
 ### ▶️ How to Run
 
 Use PowerShell directly or register the script as a service using a tool like NSSM.
+If you're running it as a Windows service (e.g., via NSSM), add this to your config:
+```json
+"RunAsService": true
+```
+This enables a workaround where `DisplaySwitch.exe` is run through a scheduled task to avoid limitations when running headless or in a background session. If you're running manually or via a Task Scheduler task in a user session, you can omit or set this to false.
 
 #### Example Execution
 
